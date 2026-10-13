@@ -5258,10 +5258,12 @@ def check_s3_image_file_size(img_filename, bucket_path=None):
     file_url = f"https://{HOST_IP}:{nginx_port}/image-store/buckets/{bucket_path}/{img_filename}"
 
     try:
-        # Execute curl HEAD request to get content-length
-        curl_command = [
-            'curl', '-skI', file_url
-        ]
+        # /image-store is behind nginx basic auth (.htpasswd); without -u, requests get 401 with an empty body
+        username, password = get_seaweedfs_web_auth_credentials()
+        curl_command = ['curl', '-skI']
+        if username and password:
+            curl_command.extend(['-u', f'{username}:{password}'])
+        curl_command.append(file_url)
 
         logger.info(f"Checking file size for: {file_url}")
 
@@ -5392,6 +5394,22 @@ def validate_s3_images_content(matched_files, max_files_to_check=3):
     }
 
 
+def get_seaweedfs_web_auth_credentials():
+    """Fetch SEAWEEDFS_WEB_AUTH_USER/PASSWORD from the multimodal .env file.
+
+    Required because nginx's /image-store location enforces HTTP Basic Auth
+    (.htpasswd generated from these values); requests without -u get a 401
+    with an empty body, which breaks JSON parsing downstream.
+    """
+    env_path = os.path.join(constants.MULTIMODAL_APPLICATION_DIRECTORY, ".env")
+    env_vars = read_env_file(env_path)
+    username = env_vars.get("SEAWEEDFS_WEB_AUTH_USER")
+    password = env_vars.get("SEAWEEDFS_WEB_AUTH_PASSWORD")
+    if not username or not password:
+        logger.error(f"SEAWEEDFS_WEB_AUTH_USER/PASSWORD not found in {env_path}")
+    return username, password
+
+
 def get_seaweedfs_bucket_files(bucket_url):
     """
     Execute curl command to retrieve SeaweedFS bucket contents and parse .jpg files
@@ -5403,14 +5421,14 @@ def get_seaweedfs_bucket_files(bucket_url):
         dict: Result containing success status, jpg_files list, total_files count, and any errors
     """
     try:
-        # Execute curl command to get bucket contents
-        curl_command = [
-            'curl', '-sk',
-            '-H', 'Accept: application/json',
-            bucket_url
-        ]
+        # /image-store is behind nginx basic auth (.htpasswd); without -u, requests get 401 with an empty body
+        username, password = get_seaweedfs_web_auth_credentials()
+        curl_command = ['curl', '-sk', '-H', 'Accept: application/json']
+        if username and password:
+            curl_command.extend(['-u', f'{username}:{password}'])
+        curl_command.extend(['-w', '\nHTTP_STATUS:%{http_code}', bucket_url])
 
-        logger.info(f"Executing curl command: {' '.join(curl_command)}")
+        logger.info(f"Executing curl command against: {bucket_url} (credentials redacted)")
 
         # Run curl command
         result = common_utils.exec_command(
@@ -5430,11 +5448,31 @@ def get_seaweedfs_bucket_files(bucket_url):
                 "total_files": 0
             }
 
+        # Split off the appended HTTP status marker from the response body
+        stdout = result.stdout
+        body, _, status_marker = stdout.rpartition('HTTP_STATUS:')
+        http_status = status_marker.strip() if status_marker else "unknown"
+        body = body.rstrip('\n')
+
+        if http_status != "200":
+            error_msg = (
+                f"Unexpected HTTP status {http_status} from SeaweedFS bucket endpoint "
+                f"(check SEAWEEDFS_WEB_AUTH_USER/PASSWORD match the deployed .env). "
+                f"Body: {body[:200]!r}"
+            )
+            logger.error(error_msg)
+            return {
+                "success": False,
+                "error": error_msg,
+                "jpg_files": [],
+                "total_files": 0
+            }
+
         # Parse JSON response
         try:
-            response_data = json.loads(result.stdout)
+            response_data = json.loads(body)
         except json.JSONDecodeError as e:
-            error_msg = f"Failed to parse JSON response: {e}"
+            error_msg = f"Failed to parse JSON response: {e}. Body: {body[:200]!r}"
             logger.error(error_msg)
             return {
                 "success": False,
