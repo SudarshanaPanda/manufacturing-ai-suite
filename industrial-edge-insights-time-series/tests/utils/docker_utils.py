@@ -346,6 +346,51 @@ def get_image_size(image):
         logger.error(f"Error getting image size for {image}: {e}")
         return None
 
+def log_image_sizes(images):
+    """Log the local size of each available Docker image, in MB."""
+    unique_images = list(dict.fromkeys(image for image in images if image))
+    if not unique_images:
+        logger.warning("No Docker images available for size reporting")
+        return
+
+    logger.info("=== Docker Image Sizes ===")
+    for image in unique_images:
+        try:
+            result = common_utils.exec_command(
+                ["docker", "image", "inspect", image, "--format={{.Size}}"],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode != 0:
+                logger.warning(f"Could not inspect image size for {image}: {(result.stderr or '').strip()}")
+                continue
+
+            size_mb = int(result.stdout.strip()) / (1024 * 1024)
+            logger.info(f"Docker image size: {image} = {size_mb:.2f} MB")
+        except (TypeError, ValueError) as e:
+            logger.warning(f"Could not parse image size for {image}: {e}")
+        except Exception as e:
+            logger.warning(f"Could not report image size for {image}: {e}")
+
+def log_container_image_sizes(containers):
+    """Log image sizes for images used by the supplied containers."""
+    images = []
+    for container in containers:
+        try:
+            result = common_utils.exec_command(
+                ["docker", "inspect", "--format", "{{.Config.Image}}", container],
+                capture_output=True,
+                text=True,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                images.append(result.stdout.strip())
+            else:
+                logger.warning(f"Could not get image name for container {container}")
+        except Exception as e:
+            logger.warning(f"Could not inspect container {container} image: {e}")
+
+    log_image_sizes(images)
+
 def wait_for_stability(seconds=30):
     """Wait for containers/services to stabilize
 
@@ -621,6 +666,20 @@ def invoke_make_build():
         result, output = run_command("make build", capture_output=True)
         logger.info(f"Build command exit code: {result}")
         logger.info(f"Build output:\n{output}")
+
+        if result == 0 and "Built" in output:
+            image_result = common_utils.exec_command(
+                ["docker", "compose", "config", "--images"],
+                capture_output=True,
+                text=True,
+            )
+            if image_result.returncode == 0:
+                log_image_sizes(image_result.stdout.splitlines())
+            else:
+                logger.warning(
+                    "Could not resolve Compose images for size reporting: "
+                    f"{(image_result.stderr or '').strip()}"
+                )
 
         # Return to original directory before returning result
         os.chdir(original_dir)
@@ -2708,6 +2767,7 @@ def deploy_from_docker_hub(app_name, ingestion_type="mqtt", wait_time=90):
 
         logger.info(f"✓ Found {len(containers)} deployed containers: {containers}")
         results["containers_running"] = True
+        log_container_image_sizes(containers)
 
         # Step 5: Verify container health status
         logger.info("Step 5: Verifying container health status")
