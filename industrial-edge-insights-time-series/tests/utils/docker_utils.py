@@ -5258,11 +5258,11 @@ def check_s3_image_file_size(img_filename, bucket_path=None):
     file_url = f"https://{HOST_IP}:{nginx_port}/image-store/buckets/{bucket_path}/{img_filename}"
 
     try:
-        # /image-store is behind nginx basic auth (.htpasswd); without -u, requests get 401 with an empty body
         username, password = get_seaweedfs_web_auth_credentials()
+        auth_config = _curl_basic_auth_config(username, password)
         curl_command = ['curl', '-skI']
-        if username and password:
-            curl_command.extend(['-u', f'{username}:{password}'])
+        if auth_config is not None:
+            curl_command.extend(['--config', '-'])
         curl_command.append(file_url)
 
         logger.info(f"Checking file size for: {file_url}")
@@ -5272,7 +5272,8 @@ def check_s3_image_file_size(img_filename, bucket_path=None):
             curl_command,
             capture_output=True,
             text=True,
-            timeout=30
+            input=auth_config or "",
+            timeout=30,
         )
 
         if result.returncode != 0:
@@ -5410,6 +5411,19 @@ def get_seaweedfs_web_auth_credentials():
     return username, password
 
 
+def _curl_basic_auth_config(username, password):
+    """Build a curl config line for Basic Auth, to pass through stdin."""
+    if not username or not password:
+        return None
+
+    credentials = f"{username}:{password}"
+    if "\n" in credentials or "\r" in credentials:
+        raise ValueError("Basic Auth credentials must not contain newlines")
+
+    escaped_credentials = credentials.replace("\\", "\\\\").replace('"', '\\"')
+    return f'user = "{escaped_credentials}"\n'
+
+
 def get_seaweedfs_bucket_files(bucket_url):
     """
     Execute curl command to retrieve SeaweedFS bucket contents and parse .jpg files
@@ -5421,11 +5435,11 @@ def get_seaweedfs_bucket_files(bucket_url):
         dict: Result containing success status, jpg_files list, total_files count, and any errors
     """
     try:
-        # /image-store is behind nginx basic auth (.htpasswd); without -u, requests get 401 with an empty body
         username, password = get_seaweedfs_web_auth_credentials()
+        auth_config = _curl_basic_auth_config(username, password)
         curl_command = ['curl', '-sk', '-H', 'Accept: application/json']
-        if username and password:
-            curl_command.extend(['-u', f'{username}:{password}'])
+        if auth_config is not None:
+            curl_command.extend(['--config', '-'])
         curl_command.extend(['-w', '\nHTTP_STATUS:%{http_code}', bucket_url])
 
         logger.info(f"Executing curl command against: {bucket_url} (credentials redacted)")
@@ -5435,7 +5449,8 @@ def get_seaweedfs_bucket_files(bucket_url):
             curl_command,
             capture_output=True,
             text=True,
-            timeout=30
+            input=auth_config or "",
+            timeout=30,
         )
 
         if result.returncode != 0:
