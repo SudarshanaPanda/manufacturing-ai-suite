@@ -26,7 +26,7 @@ import pandas as pd
 
 # Set up logger
 logger = logging.getLogger(__name__)
-
+HOST_IP = os.getenv("HOST_IP", "127.0.0.1")
 async def login_to_grafana(url, username, password):
     """
     Simple Grafana authentication test using the API endpoint.
@@ -376,7 +376,7 @@ async def login_to_grafana_docker(port=3000):
         # For Docker deployment, Grafana is accessible via nginx proxy on HTTPS
         # The nginx service exposes ${GRAFANA_PORT}:443 (HTTPS)
         # Only test HTTPS path - HTTP working would be a security bug
-        grafana_url = f"https://localhost:{port}"
+        grafana_url = f"https://{HOST_IP}{port}"
         
         logger.info(f"Attempting to login to Grafana at: {grafana_url}")
         
