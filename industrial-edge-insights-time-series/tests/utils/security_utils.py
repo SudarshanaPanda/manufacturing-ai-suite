@@ -26,7 +26,7 @@ import pandas as pd
 
 # Set up logger
 logger = logging.getLogger(__name__)
-HOST_IP = os.getenv("HOST_IP", "127.0.0.1")
+HOST_IP = common_utils.get_system_ip()
 async def login_to_grafana(url, username, password):
     """
     Simple Grafana authentication test using the API endpoint.

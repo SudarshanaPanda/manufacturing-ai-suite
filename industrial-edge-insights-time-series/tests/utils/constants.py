@@ -5,7 +5,8 @@
 #
 
 import os
-HOST_IP = os.getenv("HOST_IP", "127.0.0.1")
+import common_utils
+HOST_IP = common_utils.get_system_ip()
 
 # Centralized container definitions for all sample apps
 CONTAINERS = {
