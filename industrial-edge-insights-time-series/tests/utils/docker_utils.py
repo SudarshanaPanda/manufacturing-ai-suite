@@ -58,7 +58,7 @@ except ImportError:
     SECURITY_UTILS_AVAILABLE = False
     logger.warning("security_utils not available, some functions may be limited")
 
-HOST_IP = common_utils.get_system_ip()
+HOST_IP = constants.HOST_IP
 SEAWEEDFS_HTTP_STATUS_MARKER = "\n__SEAWEEDFS_HTTP_STATUS__:"
 
 def run_command(cmd, capture_output=False):
@@ -1244,7 +1244,7 @@ def remove_old_alert_in_tick_script(file_path, setup):
         .crit(lambda: "anomaly_status" > 0)
         .message('Anomaly detected for wind speed: {{ index .Fields "wind_speed" }} Grid Active Power: {{ index .Fields "grid_active_power" }} Anomaly Status: {{ index .Fields "anomaly_status" }} ')
         .noRecoveries()
-        .post('http://{HOST_IP}:5000/opcua_alerts')
+        .post('http://localhost:5000/opcua_alerts')
         .timeout(30s)
 """
 
@@ -4780,7 +4780,7 @@ def test_service_direct_access(container_name, service_url, timeout=30):
 
     Args:
         container_name (str): Name of the service container
-        service_url (str): URL to test (e.g., "http://{HOST_IP}:3000/")
+        service_url (str): URL to test (e.g., "http://127.0.0.1:3000/")
         timeout (int): Timeout for the request
 
     Returns:
@@ -4796,7 +4796,7 @@ def test_service_direct_access(container_name, service_url, timeout=30):
 
         # Special handling for Grafana - test login endpoint instead of root
         if container_name == "ia-grafana":
-            test_url = f"http://{HOST_IP}:3000/login"
+            test_url = f"https://{HOST_IP}:3000/login"
         else:
             test_url = service_url
 
@@ -4874,10 +4874,13 @@ def verify_critical_user_endpoints(endpoint_containers):
 
             # Test endpoint based on container type
             if container == "ia-grafana":
+                logging.info(f"Testing Grafana endpoint inside the container at http://{HOST_IP}:{port}/")
                 result = test_service_direct_access(container, f"http://{HOST_IP}:{port}/", constants.TEST_CURL_TIMEOUT)
             elif container == "dlstreamer-pipeline-server":
+                logging.info(f"Testing DL Streamer endpoint inside the container at http://{HOST_IP}:{port}/")
                 result = test_service_direct_access(container, f"http://{HOST_IP}:{port}/", constants.TEST_CURL_TIMEOUT)
             elif container == "nginx_proxy":
+                logging.info(f"Testing Nginx Proxy endpoint on the test host at https://{HOST_IP}:{port}/")  
                 result = test_nginx_proxy_endpoint(container, f"https://{HOST_IP}:{port}/", constants.TEST_CURL_TIMEOUT)
             else:
                 result = test_service_direct_access(container, f"http://{HOST_IP}:{port}/", constants.TEST_CURL_TIMEOUT)

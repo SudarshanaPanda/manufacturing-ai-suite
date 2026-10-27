@@ -26,7 +26,7 @@ import pandas as pd
 
 # Set up logger
 logger = logging.getLogger(__name__)
-HOST_IP = os.getenv("HOST_IP", "127.0.0.1")
+HOST_IP = constants.HOST_IP
 async def login_to_grafana(url, username, password):
     """
     Simple Grafana authentication test using the API endpoint.
@@ -434,7 +434,7 @@ def get_docker_ports_from_env(project_root: str = None):
     """
     if project_root is None:
         # Default to the wind turbine project directory
-        project_root = "/home/user/WW35_NMAP/frameworks.ai.ai-suite-for-timeseries/edge-ai-suites/manufacturing-ai-suite/wind-turbine-anomaly-detection"
+        project_root = constants.EDGE_AI_SUITES_DIR
     
     env_file_path = os.path.join(project_root, ".env")
     env_vars = read_env_file(env_file_path)
