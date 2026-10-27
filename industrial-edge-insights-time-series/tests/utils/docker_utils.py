@@ -521,9 +521,8 @@ def get_credential_fields():
         "INFLUXDB_PASSWORD",
         "VISUALIZER_GRAFANA_USER",
         "VISUALIZER_GRAFANA_PASSWORD",
-        "MR_MINIO_ACCESS_KEY",
-        "MR_PSQL_PASSWORD",
-        "MR_MINIO_SECRET_KEY"
+        "MCP_USERNAME",
+        "MCP_PASSWORD"
     ]
 
 def generate_invalid_value(field_name):
@@ -562,9 +561,8 @@ def generate_test_credentials(case_type="valid", invalid_field=None):
             "INFLUXDB_PASSWORD": generate_password(10),
             "VISUALIZER_GRAFANA_USER": generate_username(5),
             "VISUALIZER_GRAFANA_PASSWORD": generate_password(10),
-            "MR_MINIO_ACCESS_KEY": generate_password(10),
-            "MR_PSQL_PASSWORD": generate_password(10),
-            "MR_MINIO_SECRET_KEY": generate_password(10),
+            "MCP_USERNAME": generate_username(5),
+            "MCP_PASSWORD": generate_password(10)
         }
 
     elif case_type == "invalid":
@@ -3065,7 +3063,9 @@ def generate_multimodal_test_credentials(case_type="valid", invalid_field=None):
             "S3_STORAGE_USERNAME": "",
             "S3_STORAGE_PASSWORD": "",  # nosec B105 - intentionally blank invalid-input fixture
             "SEAWEEDFS_WEB_AUTH_USER": "",
-            "SEAWEEDFS_WEB_AUTH_PASSWORD": ""  # nosec B105 - intentionally blank invalid-input fixture
+            "SEAWEEDFS_WEB_AUTH_PASSWORD": "",
+            "MCP_USERNAME": "",
+            "MCP_PASSWORD": ""  # nosec B105 - intentionally blank invalid-input fixture
         }
     elif case_type == "valid":
         # Generate valid S3 credentials that meet Makefile requirements
@@ -3084,7 +3084,9 @@ def generate_multimodal_test_credentials(case_type="valid", invalid_field=None):
             "S3_STORAGE_USERNAME": s3_username,
             "S3_STORAGE_PASSWORD": s3_password,
             "SEAWEEDFS_WEB_AUTH_USER": generate_username(5),
-            "SEAWEEDFS_WEB_AUTH_PASSWORD": generate_password(10)
+            "SEAWEEDFS_WEB_AUTH_PASSWORD": generate_password(10),
+            "MCP_USERNAME": generate_username(5),
+            "MCP_PASSWORD": generate_password(10)
         }
 
         # Validate that S3 credentials are properly set
@@ -3101,7 +3103,9 @@ def generate_multimodal_test_credentials(case_type="valid", invalid_field=None):
             "S3_STORAGE_USERNAME": generate_username(2),  # Invalid: too short
             "S3_STORAGE_PASSWORD": generate_password(2),   # Invalid: too short
             "SEAWEEDFS_WEB_AUTH_USER": generate_username(4),
-            "SEAWEEDFS_WEB_AUTH_PASSWORD": generate_password(9)
+            "SEAWEEDFS_WEB_AUTH_PASSWORD": generate_password(9),
+            "MCP_USERNAME": generate_username(3),
+            "MCP_PASSWORD": generate_password(3)
         }
 
     else:
