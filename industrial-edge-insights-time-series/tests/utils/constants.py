@@ -221,6 +221,22 @@ SAMPLE_APPS_CONFIG = {
         ]
     }
 }
+# Additional containers started by `make up_vllm` (on top of the base multimodal list)
+MULTIMODAL_VLLM_EXTRA_CONTAINERS = [
+    "vllm-server",
+    "multimodal-agentic-ui",
+]
+# Additional containers started by `make up_agentic` (on top of the vLLM list)
+MULTIMODAL_AGENTIC_EXTRA_CONTAINERS = [
+    "apm-agent",
+    "apm-llm",
+    "apm-model-download",
+    "apm-metrics",
+    "apm-prometheus",
+]
+MULTIMODAL_VLLM_HEALTHY_TIMEOUT = 900    # seconds; vLLM/OVMS model load is slow
+MULTIMODAL_HEALTH_POLL_INTERVAL = 15     # seconds between health polls
+
 # Alert configurations from main branch
 MQTT_ALERT =  {
                     "mqtt_broker_host": "ia-mqtt-broker",
