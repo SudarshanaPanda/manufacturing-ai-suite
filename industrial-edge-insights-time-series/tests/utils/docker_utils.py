@@ -988,7 +988,10 @@ def run_mcp_pipeline_flow(context, venv_python, ca_dir, ingestion, device="CPU")
         final_status = call("get_pipeline_status")
         assert_condition(final_status["status"] == "stopped", f"Pipeline should be stopped, got: {final_status}")
     finally:
-        invoke_make_down(mcp=True)
+        assert_condition(
+            invoke_make_down(mcp=True),
+            "make down MCP=true failed during MCP pipeline cleanup",
+        )
 
 
 def update_env_file(file_path=None, values=None):
