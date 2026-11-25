@@ -35,7 +35,11 @@ def test_multimodal_make_up_vllm(setup_multimodal_environment):
     logger.info("TC_020: Testing multimodal 'make up_vllm' deployment")
 
     base_containers = constants.get_app_config(constants.MULTIMODAL_SAMPLE_APP)["multimodal_container_list"]
-    containers = base_containers + constants.MULTIMODAL_VLLM_EXTRA_CONTAINERS
+    containers = (
+        base_containers
+        + constants.MULTIMODAL_SEAWEEDFS_CONTAINERS
+        + constants.MULTIMODAL_VLLM_EXTRA_CONTAINERS
+    )
 
     docker_utils._verify_stack_running_and_healthy("up_vllm", containers)
 
@@ -47,6 +51,7 @@ def test_multimodal_make_up_agentic(setup_multimodal_environment):
     base_containers = constants.get_app_config(constants.MULTIMODAL_SAMPLE_APP)["multimodal_container_list"]
     containers = (
         base_containers
+        + constants.MULTIMODAL_SEAWEEDFS_CONTAINERS
         + constants.MULTIMODAL_VLLM_EXTRA_CONTAINERS
         + constants.MULTIMODAL_AGENTIC_EXTRA_CONTAINERS
     )

@@ -221,6 +221,13 @@ SAMPLE_APPS_CONFIG = {
         ]
     }
 }
+# Long-running SeaweedFS services in the base stack (the one-shot seaweedfs-volumes-init is excluded)
+MULTIMODAL_SEAWEEDFS_CONTAINERS = [
+    CONTAINERS["seaweedfs_master"]["name"],
+    CONTAINERS["seaweedfs_volume"]["name"],
+    CONTAINERS["seaweedfs_filer"]["name"],
+    CONTAINERS["seaweedfs_s3"]["name"],
+]
 # Additional containers started by `make up_vllm` (on top of the base multimodal list)
 MULTIMODAL_VLLM_EXTRA_CONTAINERS = [
     "vllm-server",
