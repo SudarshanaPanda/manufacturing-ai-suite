@@ -966,6 +966,18 @@ def run_mcp_pipeline_flow(context, venv_python, ca_dir, ingestion, device="CPU")
                 "sklearnex did not confirm accelerated GPU inference in logs",
             )
 
+        # Raw ingestion is independent of analytics, so wait for processed points too.
+        output_deadline = time.time() + constants.MCP_ANALYTICS_OUTPUT_TIMEOUT
+        while True:
+            metrics = call("get_processing_metrics")
+            if metrics["processed_points"] > 0 or time.time() >= output_deadline:
+                break
+            time.sleep(constants.WIND_TURBINE_POLL_INTERVAL * 2)
+        assert_condition(
+            metrics["processed_points"] > 0,
+            f"No processed analytics output within {constants.MCP_ANALYTICS_OUTPUT_TIMEOUT}s: {metrics}",
+        )
+
         insights = call("list_insights_data", {"severity": "anomaly", "page": 1, "page_size": 20})
         assert_condition(
             insights["page"] == 1 and insights["page_size"] == 20 and isinstance(insights["items"], list),
@@ -973,8 +985,15 @@ def run_mcp_pipeline_flow(context, venv_python, ca_dir, ingestion, device="CPU")
         )
         summary = call("get_anomaly_summary")
         assert_condition({"processed_points", "anomalous_points", "has_data"} <= summary.keys(), f"Unexpected summary: {summary}")
+        assert_condition(
+            summary["processed_points"] > 0 and summary["has_data"],
+            f"No processed analytics output reported by get_anomaly_summary: {summary}",
+        )
         metrics = call("get_processing_metrics")
-        assert_condition(metrics["ingested_points"] > 0, f"No ingested points reported by get_processing_metrics: {metrics}")
+        assert_condition(
+            metrics["ingested_points"] > 0 and metrics["processed_points"] > 0,
+            f"Expected both ingested and processed points from get_processing_metrics: {metrics}",
+        )
         sources = call("list_sources")
         assert_condition(isinstance(sources["items"], list), f"Unexpected list_sources result: {sources}")
 

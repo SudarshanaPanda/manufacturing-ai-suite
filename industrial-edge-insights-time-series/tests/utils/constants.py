@@ -140,6 +140,7 @@ WIND_TURBINE_OPCUA_PORT_MAPPING = "30003-30100"
 MCP_PIPELINE_START_LOG = "Kapacitor Tasks Enabled Successfully"
 MCP_PIPELINE_STOP_LOG = "Stopping Kapacitor tasks:"
 MCP_SERVER_HEALTHY_TIMEOUT = 120  # seconds to wait for the MCP server healthcheck
+MCP_ANALYTICS_OUTPUT_TIMEOUT = 120  # extra seconds to wait for processed points after the data wait
 
 # Multimodal wait durations (in seconds) to avoid hard-coded sleeps in tests
 MULTIMODAL_WAIT_FOR_VISION_DATA = 60
