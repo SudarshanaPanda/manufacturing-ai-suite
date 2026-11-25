@@ -8,6 +8,8 @@ import os
 import sys
 import logging
 
+import pytest
+
 # Add parent directory to path for utils imports
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from utils import docker_utils
@@ -16,6 +18,14 @@ from utils import constants
 
 # Import the fixture directly from conftest_docker.py
 pytest_plugins = ["conftest_docker"]
+
+pytestmark = pytest.mark.skipif(
+    os.getenv("RUN_MULTIMODAL_VLLM_AGENTIC_TESTS", "false").lower() != "true",
+    reason=(
+        "Requires Panther Lake hardware and deployment devices; set "
+        "RUN_MULTIMODAL_VLLM_AGENTIC_TESTS=true on a compatible runner"
+    ),
+)
 
 logger = logging.getLogger(__name__)
 
